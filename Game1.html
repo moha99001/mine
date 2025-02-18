@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tic-Tac-Toe</title>
+    <style>
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #6a11cb, #2575fc);
+            color: #fff;
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            margin: 30px auto;
+            max-width: 700px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 20px;
+            text-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .scoreboard {
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+            color: #ffeb3b;
+            font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+        }
+
+        .grid {
+		    padding-left: 20%;
+            display: grid;
+            grid-template-columns: repeat(6, 0.1fr);
+            gap: 5px;
+        }
+
+        .cell {
+            width: 60px;
+            height: 60px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            text-align: center;
+            line-height: 60px;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            cursor: pointer;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            transition: transform 0.2s, background 0.3s;
+        }
+
+        .cell:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+
+        .cell.disabled {
+            pointer-events: none;
+        }
+
+        .cell.X {
+            background: #ff6f61;
+            color: #fff;
+            text-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .cell.O {
+            background: #42a5f5;
+            color: #fff;
+            text-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        #reset {
+            margin-top: 20px;
+            padding: 15px 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #fff;
+            background: #f39c12;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            transition: background 0.3s, transform 0.2s;
+        }
+
+        #reset:hover {
+            background: #e67e22;
+            transform: scale(1.05);
+        }
+
+        #reset:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tic-Tac-Toe</h1>
+        <div class="scoreboard" id="scoreboard">Player: 0 | Computer: 0</div>
+        <div class="grid" id="grid"></div>
+        <button id="reset">Reset Game</button>
+    </div>
+
+    <script>
+        const grid = document.getElementById('grid');
+        const scoreboard = document.getElementById('scoreboard');
+        const resetButton = document.getElementById('reset');
+
+        let board = Array(6).fill(null).map(() => Array(6).fill(''));
+        let playerScore = 0;
+        let computerScore = 0;
+        const player = 'X';
+        const computer = 'O';
+        const depthLimit = 3; // Depth limit for minimax algorithm
+
+        function createBoard() {
+            grid.innerHTML = '';
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 6; col++) {
+                    const cell = document.createElement('div');
+                    cell.classList.add('cell');
+                    cell.dataset.row = row;
+                    cell.dataset.col = col;
+                    cell.addEventListener('click', handlePlayerMove);
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function handlePlayerMove(event) {
+            const row = parseInt(event.target.dataset.row);
+            const col = parseInt(event.target.dataset.col);
+
+            if (board[row][col] === '') {
+                board[row][col] = player;
+                updateCell(event.target, player);
+
+                if (checkWinner(player)) {
+                    playerScore++;
+                    updateScoreboard();
+                    setTimeout(() => alert('Player wins!'), 100);
+                    resetBoard();
+                    return;
+                }
+
+                if (isBoardFull()) {
+                    setTimeout(() => alert('It\'s a draw!'), 100);
+                    resetBoard();
+                    return;
+                }
+
+                handleComputerMove();
+            }
+        }
+
+        function handleComputerMove() {
+            const bestMove = findBestMove();
+
+            if (bestMove) {
+                const { row, col } = bestMove;
+                board[row][col] = computer;
+
+                const cell = document.querySelector(`.cell[data-row="${row}"][data-col="${col}"]`);
+                updateCell(cell, computer);
+
+                if (checkWinner(computer)) {
+                    computerScore++;
+                    updateScoreboard();
+                    setTimeout(() => alert('Computer wins!'), 100);
+                    resetBoard();
+                }
+            }
+        }
+
+        function findBestMove() {
+            let bestScore = -Infinity;
+            let bestMove = null;
+
+            getAvailableMoves().forEach(move => {
+                board[move.row][move.col] = computer;
+                const score = minimax(board, 0, false, -Infinity, Infinity);
+                board[move.row][move.col] = '';
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = move;
+                }
+            });
+
+            return bestMove;
+        }
+
+        function minimax(board, depth, isMaximizing, alpha, beta) {
+            if (checkWinner(computer)) return 10 - depth;
+            if (checkWinner(player)) return depth - 10;
+            if (isBoardFull() || depth >= depthLimit) return 0;
+
+            if (isMaximizing) {
+                let maxEval = -Infinity;
+                for (const move of getAvailableMoves()) {
+                    board[move.row][move.col] = computer;
+                    const eval = minimax(board, depth + 1, false, alpha, beta);
+                    board[move.row][move.col] = '';
+                    maxEval = Math.max(maxEval, eval);
+                    alpha = Math.max(alpha, eval);
+                    if (beta <= alpha) break;
+                }
+                return maxEval;
+            } else {
+                let minEval = Infinity;
+                for (const move of getAvailableMoves()) {
+                    board[move.row][move.col] = player;
+                    const eval = minimax(board, depth + 1, true, alpha, beta);
+                    board[move.row][move.col] = '';
+                    minEval = Math.min(minEval, eval);
+                    beta = Math.min(beta, eval);
+                    if (beta <= alpha) break;
+                }
+                return minEval;
+            }
+        }
+
+        function getAvailableMoves() {
+            const moves = [];
+            for (let row = 0; row < 6; row++) {
+                for (let col = 0; col < 6; col++) {
+                    if (board[row][col] === '') {
+                        moves.push({ row, col });
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function updateCell(cell, player) {
+            cell.textContent = player;
+            cell.classList.add(player);
+            cell.classList.add('disabled');
+        }
+
+        function checkWinner(player) {
+            for (let i = 0; i < 6; i++) {
+                for (let j = 0; j <= 1; j++) {
+                    if (
+                        board[i][j] === player &&
+                        board[i][j + 1] === player &&
+                        board[i][j + 2] === player &&
+                        board[i][j + 3] === player &&
+                        board[i][j + 4] === player
+                    ) {
+                        return true;
+                    }
+
+                    if (
+                        board[j][i] === player &&
+                        board[j + 1][i] === player &&
+                        board[j + 2][i] === player &&
+                        board[j + 3][i] === player &&
+                        board[j + 4][i] === player
+                    ) {
+                        return true;
+                    }
+                }
+            }
+
+            for (let i = 0; i <= 1; i++) {
+                for (let j = 0; j <= 1; j++) {
+                    if (
+                        board[i][j] === player &&
+                        board[i + 1][j + 1] === player &&
+                        board[i + 2][j + 2] === player &&
+                        board[i + 3][j + 3] === player &&
+                        board[i + 4][j + 4] === player
+                    ) {
+                        return true;
+                    }
+
+                    if (
+                        board[i][j + 4] === player &&
+                        board[i + 1][j + 3] === player &&
+                        board[i + 2][j + 2] === player &&
+                        board[i + 3][j + 1] === player &&
+                        board[i + 4][j] === player
+                    ) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function isBoardFull() {
+            return board.every(row => row.every(cell => cell !== ''));
+        }
+
+        function resetBoard() {
+            board = Array(6).fill(null).map(() => Array(6).fill(''));
+            createBoard();
+        }
+
+        function updateScoreboard() {
+            scoreboard.textContent = `Player: ${playerScore} | Computer: ${computerScore}`;
+        }
+
+        resetButton.addEventListener('click', () => {
+            playerScore = 0;
+            computerScore = 0;
+            updateScoreboard();
+            resetBoard();
+        });
+
+        createBoard();
+        updateScoreboard();
+    </script>
+</body>
+</html>
