@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sophisticated Snake Game</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background-color: #1a1a1a;
+      font-family: 'Arial', sans-serif;
+      color: #fff;
+    }
+
+    #game-container {
+      position: relative;
+      width: 400px;
+      height: 400px;
+      background-color: #2c3e50;
+      border: 5px solid #34495e;
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    }
+
+    #game-board {
+      width: 100%;
+      height: 100%;
+      display: grid;
+      grid-template-columns: repeat(20, 1fr);
+      grid-template-rows: repeat(20, 1fr);
+    }
+
+    .snake {
+      background-color: #27ae60;
+      border: 1px solid #2ecc71;
+      border-radius: 2px;
+    }
+
+    .food {
+      background-color: #e74c3c;
+      border: 1px solid #c0392b;
+      border-radius: 50%;
+    }
+
+    #score {
+      position: absolute;
+      top: -40px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 20px;
+      font-weight: bold;
+      color: #fff;
+    }
+
+    #game-over {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 30px;
+      font-weight: bold;
+      color: #e74c3c;
+      display: none;
+    }
+
+    #start-again {
+      position: absolute;
+      top: 60%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px;
+      font-weight: bold;
+      color: #fff;
+      background-color: #3498db;
+      border: none;
+      padding: 10px 20px;
+      cursor: pointer;
+      display: none;
+    }
+
+    #start-again:hover {
+      background-color: #2980b9;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-container">
+    <div id="score">Score: 0</div>
+    <div id="game-board"></div>
+    <div id="game-over">Game Over!</div>
+    <button id="start-again">Start Again</button>
+  </div>
+
+  <script>
+    const gameBoard = document.getElementById('game-board');
+    const scoreDisplay = document.getElementById('score');
+    const gameOverDisplay = document.getElementById('game-over');
+    const startAgainButton = document.getElementById('start-again');
+
+    const gridSize = 20;
+    const boardSize = 400;
+    const cellSize = boardSize / gridSize;
+
+    let snake = [{ x: 9, y: 10 }];
+    let food = { x: 5, y: 5 };
+    let direction = { x: 0, y: 0 };
+    let score = 0;
+    let gameOver = false;
+	let updated = false;
+
+    function update() {
+      if (gameOver) return;
+
+      const head = { x: snake[0].x + direction.x, y: snake[0].y + direction.y };
+
+      // Check for collision with walls or itself
+      if (
+        head.x < 0 || head.x >= gridSize ||
+        head.y < 0 || head.y >= gridSize ||
+        snake.some(segment => segment.x === head.x && segment.y === head.y)
+      ) {
+        gameOver = true;
+        gameOverDisplay.style.display = 'block';
+        startAgainButton.style.display = 'block';
+        return;
+      }
+
+      // Add new head to snake
+      snake.unshift(head);
+
+      // Check if snake eats food
+      if (head.x === food.x && head.y === food.y) {
+        score += 10;
+        scoreDisplay.textContent = `Score: ${score}`;
+        placeFood();
+      } else {
+        // Remove tail if no food eaten
+        snake.pop();
+      }
+      updated = true;
+      // Render the game
+      render();
+    }
+
+    function render() {
+      gameBoard.innerHTML = '';
+      snake.forEach(segment => {
+        const snakeElement = document.createElement('div');
+        snakeElement.style.gridRowStart = segment.y + 1;
+        snakeElement.style.gridColumnStart = segment.x + 1;
+        snakeElement.classList.add('snake');
+        gameBoard.appendChild(snakeElement);
+      });
+
+      const foodElement = document.createElement('div');
+      foodElement.style.gridRowStart = food.y + 1;
+      foodElement.style.gridColumnStart = food.x + 1;
+      foodElement.classList.add('food');
+      gameBoard.appendChild(foodElement);
+    }
+
+    function placeFood() {
+      let newFoodPosition;
+      do {
+        newFoodPosition = {
+          x: Math.floor(Math.random() * gridSize),
+          y: Math.floor(Math.random() * gridSize)
+        };
+      } while (snake.some(segment => segment.x === newFoodPosition.x && segment.y === newFoodPosition.y));
+
+      food = newFoodPosition;
+    }
+
+    function handleKeyPress(event) {
+	  if (updated === false) return;
+	  updated = false;
+      switch (event.key) {
+        case 'ArrowUp':
+          if (direction.y === 0 ) direction = { x: 0, y: -1 };
+		  
+		  
+          
+		  break;
+        case 'ArrowDown':
+          if (direction.y === 0) direction = { x: 0, y: 1 };
+		  
+
+          
+		  break;
+        case 'ArrowLeft':
+          if (direction.x === 0) direction = { x: -1, y: 0 };
+          
+		  
+		  
+		  break;
+        case 'ArrowRight':
+          if (direction.x === 0) direction = { x: 1, y: 0 };
+          
+		  
+		  
+		  break;
+      }
+    }
+
+    // Initialize the game
+    function init() {
+      snake = [{ x: 10, y: 10 }, { x: 9, y: 10 }, { x: 8, y: 10 }]; // Reset snake to initial position
+      direction = { x: 0, y: 1 }; // Reset direction
+      score = 0; // Reset score
+      gameOver = false; // Reset game over state
+      gameOverDisplay.style.display = 'none'; // Hide game over message
+      startAgainButton.style.display = 'none'; // Hide start again button
+      scoreDisplay.textContent = `Score: ${score}`; // Reset score display
+      placeFood(); // Place new food
+      render(); // Render the initial state
+    }
+
+    // Start the game
+    init();
+    setInterval(update, 100);
+    window.addEventListener('keydown', handleKeyPress);
+
+    // Add event listener for the "Start Again" button
+    startAgainButton.addEventListener('click', init);
+  </script>
+</body>
+</html>

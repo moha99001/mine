@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ping Pong Game</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      background: linear-gradient(135deg, #ff6f61, #ffc107);
+      font-family: 'Arial', sans-serif;
+      overflow: hidden;
+    }
+    canvas {
+      background: linear-gradient(145deg, #6a11cb, #2575fc);
+      border: 5px solid #fff;
+      border-radius: 20px;
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+    .score-board {
+      position: absolute;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      color: white;
+      font-size: 22px;
+      font-weight: bold;
+      text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.5);
+    }
+  </style>
+</head>
+<body>
+  <div class="score-board">Score: <span id="score">0</span> | Best: <span id="bestScore">0</span></div>
+  <canvas id="gameCanvas" width="800" height="500"></canvas>
+<script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const scoreEl = document.getElementById("score");
+    const bestScoreEl = document.getElementById("bestScore");
+    let playerScore = 0;
+    let bestScore = localStorage.getItem("bestScore") || 0;
+    bestScoreEl.textContent = bestScore;
+    
+    const paddle = { width: 20, height: 100, x: 20, y: canvas.height / 2 - 50, color: "#fff", speed: 10 };
+    const computerPaddle = { width: 20, height: 100, x: canvas.width - 40, y: canvas.height / 2 - 50, color: "#ffec42", speed: 5 };
+    const ball = { x: canvas.width / 2, y: canvas.height / 2, radius: 10, speedX: 5, speedY: 5, color: "#fff" };
+    
+    function drawRect(x, y, width, height, color) {
+        ctx.fillStyle = color;
+        ctx.fillRect(x, y, width, height);
+    }
+    
+    function drawCircle(x, y, radius, color) {
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.arc(x, y, radius, 0, Math.PI * 2);
+        ctx.closePath();
+        ctx.fill();
+    }
+    
+    function drawNet() {
+        for (let i = 0; i <= canvas.height; i += 20) {
+            drawRect(canvas.width / 2 - 1, i, 2, 10, "#ffffff88");
+        }
+    }
+    
+    canvas.addEventListener("mousemove", (e) => {
+        const rect = canvas.getBoundingClientRect();
+        paddle.y = e.clientY - rect.top - paddle.height / 2;
+    });
+    
+    function resetBall() {
+        ball.x = canvas.width / 2;
+        ball.y = canvas.height / 2;
+        ball.speedX = Math.sign(ball.speedX) * 5;
+        ball.speedY = (Math.random() > 0.5 ? 5 : -5);
+    }
+    
+    function updateGame() {
+        ball.x += ball.speedX;
+        ball.y += ball.speedY;
+        if (ball.y - ball.radius < 0 || ball.y + ball.radius > canvas.height) {
+            ball.speedY *= -1;
+        }
+        if (
+            ball.x - ball.radius < paddle.x + paddle.width &&
+            ball.y > paddle.y &&
+            ball.y < paddle.y + paddle.height
+        ) {
+            ball.speedX *= -1.1;
+            ball.speedY += Math.random() * 2 - 1;
+        }
+        if (
+            ball.x + ball.radius > computerPaddle.x &&
+            ball.y > computerPaddle.y &&
+            ball.y < computerPaddle.y + computerPaddle.height
+        ) {
+            ball.speedX *= -1.1;
+            ball.speedY += Math.random() * 2 - 1;
+        }
+        if (ball.x - ball.radius < 0) {
+            resetBall();
+            playerScore = 0;
+            scoreEl.textContent = playerScore;
+        }
+        if (ball.x + ball.radius > canvas.width) {
+            playerScore++;
+            scoreEl.textContent = playerScore;
+            if (playerScore > bestScore) {
+                bestScore = playerScore;
+                bestScoreEl.textContent = bestScore;
+                localStorage.setItem("bestScore", bestScore);
+            }
+            resetBall();
+        }
+        computerPaddle.y += ball.y < computerPaddle.y + computerPaddle.height / 2 ? -computerPaddle.speed : computerPaddle.speed;
+        if (computerPaddle.y < 0) computerPaddle.y = 0;
+        if (computerPaddle.y + computerPaddle.height > canvas.height) computerPaddle.y = canvas.height - computerPaddle.height;
+    }
+    
+    function renderGame() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawRect(0, 0, canvas.width, canvas.height, "#222");
+        drawNet();
+        drawRect(paddle.x, paddle.y, paddle.width, paddle.height, paddle.color);
+        drawRect(computerPaddle.x, computerPaddle.y, computerPaddle.width, computerPaddle.height, computerPaddle.color);
+        drawCircle(ball.x, ball.y, ball.radius, ball.color);
+    }
+    
+    function gameLoop() {
+        updateGame();
+        renderGame();
+        requestAnimationFrame(gameLoop);
+    }
+    
+    gameLoop();
+</script>
+</body>
+</html>

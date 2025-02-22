@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aim Trainer</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background: linear-gradient(135deg, #1e3c72, #2a5298);
+      color: white;
+      margin: 0;
+      overflow: hidden;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .game-container {
+      text-align: center;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 30px;
+      border-radius: 20px;
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.6);
+    }
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 20px;
+    }
+    #timer, #score, #high-score {
+      font-size: 1.5rem;
+      margin: 10px 0;
+    }
+    #target {
+      width: 100px;
+      height: 100px;
+      background: #ff4757;
+      border-radius: 50%;
+      position: absolute;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(255, 71, 87, 0.7);
+      transition: all 0.3s ease;
+    }
+    #start-button {
+      padding: 15px 30px;
+      font-size: 1.2rem;
+      background: #2ed573;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    #start-button:hover {
+      background: #7bed9f;
+    }
+    #leaderboard {
+      margin-top: 20px;
+      font-size: 1.2rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="game-container">
+    <h1>Aim Trainer</h1>
+    <div id="timer">Time Left: 30s</div>
+    <div id="score">Score: 0</div>
+    <div id="high-score">High Score: 0</div>
+    <div id="target"></div>
+    <button id="start-button">Start Game</button>
+    <div id="leaderboard">
+      <h2>Leaderboard</h2>
+      <ol id="leaderboard-list"></ol>
+    </div>
+  </div>
+
+  <script>
+    const target = document.getElementById('target');
+    const startButton = document.getElementById('start-button');
+    const timerDisplay = document.getElementById('timer');
+    const scoreDisplay = document.getElementById('score');
+    const highScoreDisplay = document.getElementById('high-score');
+    const leaderboardList = document.getElementById('leaderboard-list');
+    let score = 0;
+    let timeLeft = 30;
+    let highScore = 0;
+    let timer;
+    let leaderboard = JSON.parse(localStorage.getItem('leaderboard')) || [];
+
+    function updateLeaderboard() {
+      leaderboardList.innerHTML = leaderboard
+        .sort((a, b) => b - a)
+        .slice(0, 5)
+        .map((score, index) => `<li>${index + 1}. ${score}</li>`)
+        .join('');
+    }
+
+    function moveTarget() {
+      const size = Math.max(50, 100 - score * 2); // Target gets smaller as score increases
+      const x = Math.random() * (window.innerWidth - size);
+      const y = Math.random() * (window.innerHeight - size);
+      target.style.width = `${size}px`;
+      target.style.height = `${size}px`;
+      target.style.left = `${x}px`;
+      target.style.top = `${y}px`;
+    }
+
+    function startGame() {
+      score = 0;
+      timeLeft = 30;
+      scoreDisplay.textContent = `Score: ${score}`;
+      timerDisplay.textContent = `Time Left: ${timeLeft}s`;
+      startButton.disabled = true;
+      target.style.display = 'block';
+      moveTarget();
+      timer = setInterval(() => {
+        timeLeft--;
+        timerDisplay.textContent = `Time Left: ${timeLeft}s`;
+        if (timeLeft <= 0) {
+          clearInterval(timer);
+          target.style.display = 'none';
+          startButton.disabled = false;
+          leaderboard.push(score);
+          localStorage.setItem('leaderboard', JSON.stringify(leaderboard));
+          updateLeaderboard();
+          if (score > highScore) {
+            highScore = score;
+            highScoreDisplay.textContent = `High Score: ${highScore}`;
+          }
+          alert(`Game Over! Your score is ${score}`);
+        }
+      }, 1000);
+    }
+
+    target.addEventListener('click', () => {
+      score++;
+      scoreDisplay.textContent = `Score: ${score}`;
+      moveTarget();
+    });
+
+    startButton.addEventListener('click', startGame);
+
+    // Initialize leaderboard
+    updateLeaderboard();
+    if (leaderboard.length > 0) {
+      highScore = Math.max(...leaderboard);
+      highScoreDisplay.textContent = `High Score: ${highScore}`;
+    }
+  </script>
+</body>
+</html>
